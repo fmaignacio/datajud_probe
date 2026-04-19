@@ -1,18 +1,83 @@
 # datajud_probe
 
-Pequeno probe em Python para consultar a API publica do DataJud e gerar arquivos JSON com amostras brutas e resumos de cobertura de campos.
+Repositorio exploratorio para apoiar um projeto de mestrado em Ciencia de Dados sobre LLMs, governanca epistemica e conhecimento institucional no setor publico brasileiro.
 
-## Requisitos
+O projeto nasceu como um probe da API publica do DataJud, mas os testes iniciais indicaram que a fonte mais promissora para analise semantica e o STJ Dados Abertos, especialmente a base de integras de decisoes terminativas e acordaos do Diario da Justica.
 
-- Python 3.10+
-- Chave de API do DataJud
+## Objetivo atual
 
-## Configuracao
+A etapa atual nao busca treinar modelos, criar uma aplicacao ou comparar LLMs com decisoes humanas.
+
+O foco imediato e fazer uma analise exploratoria minima e reprodutivel da base do STJ:
+
+- carregar metadados em JSON;
+- abrir o ZIP com textos integrais em TXT;
+- validar a ligacao entre `SeqDocumento` e os arquivos de texto;
+- montar amostras com metadados e texto integral;
+- limpar marcacoes simples, como `<br>`;
+- produzir estatisticas descritivas;
+- gerar um relatorio de cobertura e qualidade da base.
+
+Antes de qualquer analise com LLM, o objetivo e entender se a base e adequada como corpus semantico.
+
+## Contexto da pesquisa
+
+A pergunta teorica provisoria e:
+
+> Como o uso de LLMs em contextos institucionais reconfigura a producao, a validacao e o uso do conhecimento institucional no setor publico brasileiro?
+
+A hipotese teorica provisoria e que LLMs podem funcionar como uma forma implicita de delegacao cognitiva, alterando praticas de validacao, confianca e autoridade epistemica.
+
+A pergunta empirica provisoria e:
+
+> Como saidas geradas por LLMs diferem de decisoes humanas institucionais em casos juridicos estruturados com dados publicos?
+
+Essa comparacao, no entanto, so deve ser considerada depois da validacao exploratoria da base textual.
+
+## Fontes avaliadas
+
+### DataJud
+
+Util para metadados processuais, classes, assuntos, orgaos julgadores, graus, movimentacoes e datas. Nos testes iniciais, nao se confirmou como corpus textual principal.
+
+### TJSP
+
+Pode ser util para amostras qualitativas pequenas, mas parece menos adequado para coleta escalavel.
+
+### STJ Dados Abertos
+
+Fonte principal atual. A base de integras de decisoes terminativas e acordaos oferece:
+
+- ZIP com textos integrais em TXT;
+- JSON com metadados;
+- CSV com dicionario de dados;
+- chave `SeqDocumento` para vincular metadados e textos.
+
+## Estrutura atual
+
+```text
+.
+├── CODEX_PROMPT.md
+├── README.md
+├── requirements.txt
+└── src/
+    ├── client.py
+    ├── config.py
+    ├── queries.py
+    ├── run_probe.py
+    └── data/
+        └── master/
+            └── PROJETO_MESTRADO.md
+```
+
+## Configuracao do probe DataJud
+
+O probe original ainda usa a API publica do DataJud.
 
 Crie um ambiente virtual e instale as dependencias:
 
 ```bash
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
@@ -29,12 +94,10 @@ Depois edite `.env` e informe sua chave:
 DATAJUD_API_KEY=sua_chave_aqui
 ```
 
-## Uso
-
-Execute o probe:
+## Uso do probe atual
 
 ```bash
-python src/run_probe.py
+python3 src/run_probe.py
 ```
 
 Os resultados gerados ficam em:
@@ -43,3 +106,11 @@ Os resultados gerados ficam em:
 - `data/reports/`
 
 Essas pastas nao sao versionadas porque contem saidas geradas pela execucao.
+
+## Proximos passos
+
+1. Baixar uma amostra da base STJ de integras.
+2. Colocar os arquivos brutos em `data/raw/stj_integras/`.
+3. Criar funcoes de leitura, validacao de chave e limpeza textual.
+4. Gerar uma amostra processada.
+5. Produzir `reports/summaries/eda_summary.md`.

@@ -7,3 +7,5 @@ tqdm
 pyarrow
 matplotlib
 tabulate
+lxml
+html5lib

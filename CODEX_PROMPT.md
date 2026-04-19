@@ -80,6 +80,7 @@ Criar uma análise exploratória mínima e reprodutível para:
 6. gerar estatísticas descritivas;
 7. salvar uma amostra processada;
 8. produzir um relatório de cobertura e qualidade da base.
+9. quando houver tabela de assuntos processuais, mapear códigos de assunto para rótulos textuais e caminhos hierárquicos.
 
 ## 6. Restrições importantes
 
@@ -143,9 +144,11 @@ datajud_stj_semantic_probe/
 │   ├── 00_download_stj_metadados.ipynb
 │   ├── 01_exploracao_stj_metadados.ipynb
 │   ├── 02_validacao_integras_txt.ipynb
-│   └── 03_analise_textual_inicial.ipynb
+│   ├── 03_analise_textual_inicial.ipynb
+│   └── 04_parse_tabela_assuntos.ipynb
 ├── src/
 │   ├── __init__.py
+│   ├── assuntos.py
 │   ├── io_stj.py
 │   ├── clean_text.py
 │   ├── eda.py

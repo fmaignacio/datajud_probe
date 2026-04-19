@@ -17,6 +17,7 @@ O foco imediato e fazer uma analise exploratoria minima e reprodutivel da base d
 - limpar marcacoes simples, como `<br>`;
 - produzir estatisticas descritivas;
 - gerar um relatorio de cobertura e qualidade da base.
+- mapear codigos de assuntos processuais para rotulos textuais quando a tabela CNJ/STJ estiver disponivel.
 
 Antes de qualquer analise com LLM, o objetivo e entender se a base e adequada como corpus semantico.
 
@@ -61,6 +62,7 @@ Fonte principal atual. A base de integras de decisoes terminativas e acordaos of
 ├── README.md
 ├── requirements.txt
 └── src/
+    ├── assuntos.py
     ├── client.py
     ├── config.py
     ├── queries.py
@@ -111,7 +113,8 @@ Essas pastas nao sao versionadas porque contem saidas geradas pela execucao.
 
 1. Baixar uma amostra da base STJ de integras.
 2. Rodar `notebooks/00_download_stj_metadados.ipynb` para baixar apenas os JSONs de metadados do recorte desejado.
-3. Rodar `notebooks/01_exploracao_stj_metadados.ipynb` para explorar os metadados sem carregar textos grandes.
-4. Colocar um pacote bruto em `data/raw/stj_integras/`, quando for necessario validar TXT.
-5. Rodar `notebooks/02_validacao_integras_txt.ipynb` para validar a ligacao entre `SeqDocumento` e os TXT do ZIP.
-6. Rodar `notebooks/03_analise_textual_inicial.ipynb` apenas depois de gerar uma amostra textual processada.
+3. Rodar `notebooks/04_parse_tabela_assuntos.ipynb` para gerar `data/reference/assuntos/processed/assuntos_lookup.parquet`.
+4. Rodar `notebooks/01_exploracao_stj_metadados.ipynb` para explorar os metadados sem carregar textos grandes; se o lookup existir, os assuntos sao enriquecidos com rotulos textuais.
+5. Colocar um pacote bruto em `data/raw/stj_integras/`, quando for necessario validar TXT.
+6. Rodar `notebooks/02_validacao_integras_txt.ipynb` para validar a ligacao entre `SeqDocumento` e os TXT do ZIP.
+7. Rodar `notebooks/03_analise_textual_inicial.ipynb` apenas depois de gerar uma amostra textual processada.

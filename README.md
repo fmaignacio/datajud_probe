@@ -111,10 +111,58 @@ Essas pastas nao sao versionadas porque contem saidas geradas pela execucao.
 
 ## Proximos passos
 
-1. Baixar uma amostra da base STJ de integras.
-2. Rodar `notebooks/00_download_stj_metadados.ipynb` para baixar apenas os JSONs de metadados do recorte desejado.
-3. Rodar `notebooks/04_parse_tabela_assuntos.ipynb` para gerar `data/reference/assuntos/processed/assuntos_lookup.parquet`.
-4. Rodar `notebooks/01_exploracao_stj_metadados.ipynb` para explorar os metadados sem carregar textos grandes; se o lookup existir, os assuntos sao enriquecidos com rotulos textuais.
-5. Colocar um pacote bruto em `data/raw/stj_integras/`, quando for necessario validar TXT.
-6. Rodar `notebooks/02_validacao_integras_txt.ipynb` para validar a ligacao entre `SeqDocumento` e os TXT do ZIP.
-7. Rodar `notebooks/03_analise_textual_inicial.ipynb` apenas depois de gerar uma amostra textual processada.
+1. Instale dependências (incluindo `plotly`, `nbformat`, `kaleido`):
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. **Metadados:** Rode `notebooks/00_download_stj_metadados.ipynb` para baixar apenas os JSONs de metadados do recorte desejado.
+
+3. **Lookup de assuntos (local):** Rode `notebooks/04_parse_tabela_assuntos.ipynb` para gerar `data/reference/assuntos/processed/assuntos_lookup.parquet`.
+
+4. **EDA metadados (sem textos grandes):** Rode `notebooks/01_exploracao_stj_metadados.ipynb` para explorar os metadados; se o lookup existir, os assuntos são enriquecidos com rótulos textuais.
+
+5. **EDA avancada (Plotly + Insights):** Rode `notebooks/05_eda_avancada_stj.ipynb` para análise completa com gráficos interativos (volume temporal, composição documental, ministros, processos CNJ, assuntos, qualidade de dados).
+
+6. **Validação de textos:** Coloque um pacote bruto em `data/raw/stj_integras/` e rode `notebooks/02_validacao_integras_txt.ipynb` para validar a ligação entre `SeqDocumento` e os TXT do ZIP.
+
+7. **Análise textual inicial:** Rode `notebooks/03_analise_textual_inicial.ipynb` apenas depois de gerar uma amostra textual processada.
+
+## Estrutura
+
+```text
+.
+├── CODEX_PROMPT.md                    # Instruções para Codex
+├── README.md
+├── requirements.txt
+├── .vscode/
+│   ├── settings.json                  # Configuração VS Code
+│   └── extensions.json                # Extensões recomendadas
+├── .gitignore
+├── src/
+│   ├── __init__.py
+│   ├── assuntos.py                    # Parser de tabela de assuntos (HTML/XLS)
+│   ├── client.py                      # Cliente DataJud
+│   ├── config.py                      # Configuração (API_KEY lazy)
+│   ├── queries.py                     # Queries DataJud
+│   ├── run_probe.py                   # Probe original DataJud
+│   └── data/master/
+│       └── PROJETO_MESTRADO.md        # Documento de ideia do projeto
+├── data/
+│   ├── raw/
+│   │   └── stj_integras/              # ZIP + JSON brutos (em .gitignore)
+│   ├── reports/
+│   │   ├── summaries/                 # CSVs e Markdown de relatórios
+│   │   └── figures/                   # Gráficos Plotly (HTML + PNG)
+│   └── reference/
+│       └── assuntos/processed/        # Lookup parseado (CSV + Parquet)
+└── notebooks/
+    ├── 00_download_stj_metadados.ipynb     # Download iterativo de JSONs
+    ├── 01_exploracao_stj_metadados.ipynb   # EDA básica (sem textos)
+    ├── 02_validacao_integras_txt.ipynb     # Validação SeqDocumento ↔ TXT
+    ├── 03_analise_textual_inicial.ipynb    # Análise textual inicial
+    ├── 04_parse_tabela_assuntos.ipynb      # Parser de assuntos
+    ├── 05_eda_avancada_stj.ipynb           # EDA completa com Plotly
+    └── 78_Tabela_Assuntos_Justica_Federal_1_Grau.xls
+```
+

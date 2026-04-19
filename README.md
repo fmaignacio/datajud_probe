@@ -111,6 +111,6 @@ Essas pastas nao sao versionadas porque contem saidas geradas pela execucao.
 
 1. Baixar uma amostra da base STJ de integras.
 2. Colocar os arquivos brutos em `data/raw/stj_integras/`.
-3. Criar funcoes de leitura, validacao de chave e limpeza textual.
-4. Gerar uma amostra processada.
-5. Produzir `reports/summaries/eda_summary.md`.
+3. Rodar `notebooks/01_exploracao_stj_metadados.ipynb` para explorar os metadados sem carregar textos grandes.
+4. Rodar `notebooks/02_validacao_integras_txt.ipynb` para validar a ligacao entre `SeqDocumento` e os TXT do ZIP.
+5. Rodar `notebooks/03_analise_textual_inicial.ipynb` apenas depois de gerar uma amostra textual processada.

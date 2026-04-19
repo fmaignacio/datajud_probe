@@ -1,13 +1,14 @@
 import requests
-from config import BASE_URL, TRIBUNAL_ALIAS, API_KEY, TIMEOUT
+
+from .config import BASE_URL, TIMEOUT, TRIBUNAL_ALIAS, require_api_key
+
 
 def post_search(payload: dict) -> dict:
-    if not API_KEY:
-        raise RuntimeError("DATAJUD_API_KEY não encontrada no .env")
+    api_key = require_api_key()
 
     url = f"{BASE_URL}/{TRIBUNAL_ALIAS}/_search"
     headers = {
-        "Authorization": f"APIKey {API_KEY}",
+        "Authorization": f"APIKey {api_key}",
         "Content-Type": "application/json",
     }
 

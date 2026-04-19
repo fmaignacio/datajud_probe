@@ -1,9 +1,14 @@
 import json
+import sys
 from collections import Counter
+from pathlib import Path
 
-from client import post_search
-from queries import query_basica, query_exists, query_grau, query_grau_exists
-from config import RAW_DIR, REPORT_DIR
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from src.client import post_search
+from src.config import RAW_DIR, REPORT_DIR
+from src.queries import query_basica, query_exists, query_grau, query_grau_exists
 
 FIELDS_TO_CHECK = [
     "numeroProcesso",

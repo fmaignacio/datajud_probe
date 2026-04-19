@@ -110,7 +110,8 @@ Essas pastas nao sao versionadas porque contem saidas geradas pela execucao.
 ## Proximos passos
 
 1. Baixar uma amostra da base STJ de integras.
-2. Colocar os arquivos brutos em `data/raw/stj_integras/`.
+2. Rodar `notebooks/00_download_stj_metadados.ipynb` para baixar apenas os JSONs de metadados do recorte desejado.
 3. Rodar `notebooks/01_exploracao_stj_metadados.ipynb` para explorar os metadados sem carregar textos grandes.
-4. Rodar `notebooks/02_validacao_integras_txt.ipynb` para validar a ligacao entre `SeqDocumento` e os TXT do ZIP.
-5. Rodar `notebooks/03_analise_textual_inicial.ipynb` apenas depois de gerar uma amostra textual processada.
+4. Colocar um pacote bruto em `data/raw/stj_integras/`, quando for necessario validar TXT.
+5. Rodar `notebooks/02_validacao_integras_txt.ipynb` para validar a ligacao entre `SeqDocumento` e os TXT do ZIP.
+6. Rodar `notebooks/03_analise_textual_inicial.ipynb` apenas depois de gerar uma amostra textual processada.

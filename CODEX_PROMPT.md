@@ -140,6 +140,7 @@ datajud_stj_semantic_probe/
 │   ├── interim/
 │   └── processed/
 ├── notebooks/
+│   ├── 00_download_stj_metadados.ipynb
 │   ├── 01_exploracao_stj_metadados.ipynb
 │   ├── 02_validacao_integras_txt.ipynb
 │   └── 03_analise_textual_inicial.ipynb

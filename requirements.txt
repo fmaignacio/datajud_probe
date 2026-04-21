@@ -9,6 +9,3 @@ matplotlib
 tabulate
 lxml
 html5lib
-plotly
-kaleido
-nbformat

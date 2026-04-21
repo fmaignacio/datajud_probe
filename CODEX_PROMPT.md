@@ -315,3 +315,110 @@ Quero continuar uma pesquisa de mestrado sobre LLMs, conhecimento institucional 
 A EDA atual é documental, com recorte 2024-2026, e não deve ser confundida com vida processual completa.
 Meu próximo objetivo é conectar a análise exploratória do corpus STJ ao desenho da dissertação, planejando a integração com Espelhos de Acórdãos, Movimentação Processual e, futuramente, outras instâncias.
 ```
+
+## 14. Referencias rapidas a arquivos do repositorio
+
+Use estes arquivos como pontos de entrada. Os caminhos abaixo sao relativos a raiz do repositorio.
+
+### Documentacao principal
+
+- `README.md`
+  - Visao geral do projeto, estrutura de pastas, fluxo recomendado e proximos passos.
+- `docs/NOTEBOOK_GUIDE.md`
+  - Guia operacional detalhado notebook por notebook. Leia este arquivo antes de alterar notebooks.
+- `CODEX_PROMPT.md`
+  - Este prompt de transferencia de contexto para novos chats/projetos.
+- `src/data/master/PROJETO_MESTRADO.md`
+  - Documento de ideia do projeto de mestrado, com motivacao teorica e direcao academica.
+
+### Notebooks de aquisicao
+
+- `notebooks/00_download_stj_metadados.ipynb`
+  - Baixa JSONs `metadados<aaaammdd>.json` do STJ.
+  - Parametros importantes: `DATA_INICIO`, `DATA_FIM`, `MAX_DOWNLOADS`.
+- `notebooks/00b_download_stj_textos.ipynb`
+  - Baixa ZIPs de textos e normaliza para `textos<aaaammdd>.zip`.
+  - Parametros importantes: `ANOS_ANALISE`, `DATA_INICIO`, `DATA_FIM`, `MAX_DOWNLOADS`, `OVERWRITE`.
+
+### Notebooks de EDA e apresentacao
+
+- `notebooks/01_exploracao_stj_metadados.ipynb`
+  - EDA principal dos metadados.
+  - Gera CSVs e `metadata_eda_summary.md` em `data/reports/summaries/`.
+  - Corrige/coalesce `ministro`, `NM_MINISTRO` e `relator`.
+- `notebooks/05_eda_avancada_stj.ipynb`
+  - EDA mais completa com Matplotlib.
+  - Boa para exploracao aprofundada, menos indicada para apresentacao rapida.
+- `notebooks/08_apresentacao_eda_stj.ipynb`
+  - Notebook visual para apresentacao de 30 minutos.
+  - Usa os summaries gerados pelo notebook `01`.
+
+### Notebooks de texto e vida processual
+
+- `notebooks/02_validacao_integras_txt.ipynb`
+  - Smoke test de um lote JSON + ZIP com `SeqDocumento`.
+- `notebooks/03_analise_textual_inicial.ipynb`
+  - Analise de amostra textual gerada pelo notebook `02`.
+- `notebooks/06_ciclo_vida_processual_stj.ipynb`
+  - Experimental. Tenta criar espinha dorsal processual e manifesto de documentos.
+  - Nao tratar `process_spine = 0` como falha do corpus; e sinal de que a chave CNJ ainda precisa ser resolvida.
+- `notebooks/07_documentos_por_processo_stj.ipynb`
+  - Experimental e pesado. Processa multiplos lotes JSON + ZIP e gera documento-texto.
+
+### Assuntos processuais
+
+- `notebooks/04_parse_tabela_assuntos.ipynb`
+  - Gera lookup de assuntos.
+- `notebooks/78_Tabela_Assuntos_Justica_Federal_1_Grau.xls`
+  - Fonte inicial local de assuntos. Usar como rotulo auxiliar, nao como cobertura completa de instancias.
+- `src/assuntos.py`
+  - Funcoes para parsear e salvar lookup de assuntos.
+- `data/reference/assuntos/processed/assuntos_lookup.csv`
+- `data/reference/assuntos/processed/assuntos_lookup.parquet`
+  - Lookup derivado usado pela EDA quando disponivel.
+
+### API/DataJud/STJ auxiliares
+
+- `data/api/ata20230630.json`
+  - Exemplo de Ata de Distribuicao STJ.
+- `data/api/dicionario-atadedistribuicao.csv`
+  - Dicionario da ata.
+- `data/api/modelo-de-transferencia-de-dados-1.2-81544272558adf336e6c4d58ed66e4f7.xsd`
+  - Modelo CNJ/DataJud para transferencia de dados.
+- `data/api/info_api.txt`
+  - Anotacoes/infos sobre API.
+
+### Artefatos gerados esperados no Drive ou local
+
+Estes geralmente nao estao versionados, mas sao consumidos pelos notebooks:
+
+- `data/raw/stj_integras_metadata/<ano>/metadados<aaaammdd>.json`
+  - Metadados brutos STJ.
+- `data/raw/stj_integras/<ano>/textos<aaaammdd>.zip`
+  - Textos integrais em ZIP.
+- `data/reports/summaries/metadata_eda_summary.md`
+  - Resumo textual da EDA principal.
+- `data/reports/summaries/stj_docs_by_publication_year.csv`
+- `data/reports/summaries/stj_docs_by_publication_month.csv`
+- `data/reports/summaries/stj_processes_by_publication_year.csv`
+- `data/reports/summaries/stj_docs_by_type.csv`
+- `data/reports/summaries/stj_docs_by_minister.csv`
+- `data/reports/summaries/stj_docs_by_teor.csv`
+- `data/reports/summaries/stj_docs_by_recurso.csv`
+- `data/reports/summaries/stj_docs_by_assunto_final_labeled.csv`
+  - CSVs usados pelo notebook `08`.
+- `data/reports/figures/apresentacao_eda/`
+  - Figuras exportadas pelo notebook `08`.
+- `data/processed/stj_integras_documentos_manifest.parquet`
+  - Manifesto documental gerado/consumido pelo `06`.
+- `data/processed/stj_documentos_por_processo.parquet`
+  - Tabela documento-texto gerada pelo `07`, quando processado.
+
+### Arquivos de codigo DataJud original
+
+- `src/client.py`
+- `src/config.py`
+- `src/queries.py`
+- `src/run_probe.py`
+
+Esses arquivos pertencem ao probe DataJud inicial. A pesquisa atual nao abandonou DataJud, mas reposicionou seu papel: metadados/movimentos, nao corpus textual principal.

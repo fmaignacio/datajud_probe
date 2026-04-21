@@ -111,22 +111,32 @@ Essas pastas nao sao versionadas porque contem saidas geradas pela execucao.
 
 ## Proximos passos
 
-1. Instale dependências (incluindo `plotly`, `nbformat`, `kaleido`):
+Para uma explicacao operacional notebook por notebook, consulte [`docs/NOTEBOOK_GUIDE.md`](docs/NOTEBOOK_GUIDE.md).
+
+1. Instale dependências:
    ```bash
    pip install -r requirements.txt
    ```
 
 2. **Metadados:** Rode `notebooks/00_download_stj_metadados.ipynb` para baixar apenas os JSONs de metadados do recorte desejado.
 
-3. **Lookup de assuntos (local):** Rode `notebooks/04_parse_tabela_assuntos.ipynb` para gerar `data/reference/assuntos/processed/assuntos_lookup.parquet`.
+3. **Textos integrais:** Rode `notebooks/00b_download_stj_textos.ipynb` para baixar os ZIPs de textos do recorte atual, por padrão 2024-2026.
 
-4. **EDA metadados (sem textos grandes):** Rode `notebooks/01_exploracao_stj_metadados.ipynb` para explorar os metadados; se o lookup existir, os assuntos são enriquecidos com rótulos textuais.
+4. **Lookup de assuntos (local):** Rode `notebooks/04_parse_tabela_assuntos.ipynb` para gerar `data/reference/assuntos/processed/assuntos_lookup.parquet`.
 
-5. **EDA avancada (Plotly + Insights):** Rode `notebooks/05_eda_avancada_stj.ipynb` para análise completa com gráficos interativos (volume temporal, composição documental, ministros, processos CNJ, assuntos, qualidade de dados).
+5. **EDA metadados (sem textos grandes):** Rode `notebooks/01_exploracao_stj_metadados.ipynb` para explorar os metadados; se o lookup existir, os assuntos são enriquecidos com rótulos textuais.
 
-6. **Validação de textos:** Coloque um pacote bruto em `data/raw/stj_integras/` e rode `notebooks/02_validacao_integras_txt.ipynb` para validar a ligação entre `SeqDocumento` e os TXT do ZIP.
+6. **EDA avancada (Matplotlib + Insights):** Rode `notebooks/05_eda_avancada_stj.ipynb` para análise completa com gráficos inline (volume temporal, composição documental, ministros, processos CNJ, assuntos, qualidade de dados).
 
-7. **Análise textual inicial:** Rode `notebooks/03_analise_textual_inicial.ipynb` apenas depois de gerar uma amostra textual processada.
+7. **Ciclo de vida processual:** Rode `notebooks/06_ciclo_vida_processual_stj.ipynb` para consolidar ata de distribuição, DataJud, movimentos, metadados de íntegras e primeira aparição no corpus.
+
+8. **Validação de textos:** Rode `notebooks/02_validacao_integras_txt.ipynb` para validar um lote pequeno da ligação entre `SeqDocumento` e os TXT do ZIP.
+
+9. **Documentos por processo:** Rode `notebooks/07_documentos_por_processo_stj.ipynb` para montar a tabela documento-texto por processo em múltiplos lotes e, opcionalmente, textos concatenados por processo.
+
+10. **Apresentação EDA:** Rode `notebooks/08_apresentacao_eda_stj.ipynb` para uma versão visual, curta e orientada a apresentação dos principais achados.
+
+11. **Análise textual inicial:** Rode `notebooks/03_analise_textual_inicial.ipynb` apenas depois de gerar uma amostra textual processada.
 
 ## Estrutura
 
@@ -150,19 +160,25 @@ Essas pastas nao sao versionadas porque contem saidas geradas pela execucao.
 │       └── PROJETO_MESTRADO.md        # Documento de ideia do projeto
 ├── data/
 │   ├── raw/
-│   │   └── stj_integras/              # ZIP + JSON brutos (em .gitignore)
+│   │   ├── stj_integras/              # ZIPs de textos integrais, por ano
+│   │   └── stj_integras_metadata/     # JSONs de metadados, por ano
+│   ├── api/                           # Amostras e contratos da API/DataJud/STJ
+│   ├── processed/                     # Tabelas derivadas por processo/documento
 │   ├── reports/
 │   │   ├── summaries/                 # CSVs e Markdown de relatórios
-│   │   └── figures/                   # Gráficos Plotly (HTML + PNG)
+│   │   └── figures/                   # Gráficos gerados (PNG)
 │   └── reference/
 │       └── assuntos/processed/        # Lookup parseado (CSV + Parquet)
 └── notebooks/
     ├── 00_download_stj_metadados.ipynb     # Download iterativo de JSONs
+    ├── 00b_download_stj_textos.ipynb       # Download iterativo dos ZIPs de texto
     ├── 01_exploracao_stj_metadados.ipynb   # EDA básica (sem textos)
     ├── 02_validacao_integras_txt.ipynb     # Validação SeqDocumento ↔ TXT
     ├── 03_analise_textual_inicial.ipynb    # Análise textual inicial
     ├── 04_parse_tabela_assuntos.ipynb      # Parser de assuntos
-    ├── 05_eda_avancada_stj.ipynb           # EDA completa com Plotly
+    ├── 05_eda_avancada_stj.ipynb           # EDA completa com Matplotlib
+    ├── 06_ciclo_vida_processual_stj.ipynb  # Processo, ata, movimentos e primeira aparição
+    ├── 07_documentos_por_processo_stj.ipynb # Documento-texto por processo
+    ├── 08_apresentacao_eda_stj.ipynb       # Notebook visual para apresentação
     └── 78_Tabela_Assuntos_Justica_Federal_1_Grau.xls
 ```
-

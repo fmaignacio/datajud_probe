@@ -9,3 +9,5 @@ matplotlib
 tabulate
 lxml
 html5lib
+plotly
+nbformat

@@ -1,0 +1,188 @@
+version: 1
+
+project:
+  name: datajud_probe
+  focus: "vida util processual no STJ com base textual principal nas integras do STJ"
+
+sources:
+  stj_integras:
+    kind: corpus_textual
+    status: active
+    role:
+      - base_textual_principal
+      - documentos_e_texto_limpo
+    keys:
+      primary_process_key: numero_registro_stj
+      secondary_process_key: numero_processo
+      document_key: seq_documento
+    observed_coverage:
+      start_date: "2021-01-04"
+      end_date: null
+      certainty: approximate
+      note: "integras de decisoes disponiveis a partir de 2021-01-04"
+    raw_locations:
+      - data/raw/stj_integras
+      - data/raw/stj_integras_metadata
+    processed_artifacts:
+      - stj_integras_documentos_manifest.parquet
+      - stj_documentos_por_processo.parquet
+      - stj_textos_por_processo.parquet
+    limitations:
+      - "nao cobre textos anteriores ao inicio do corpus"
+      - "nem todo documento traz numero CNJ"
+      - "depende fortemente de numero_registro_stj para integracao"
+
+  ata_distribuicao_stj:
+    kind: process_metadata
+    status: active
+    role:
+      - distribuicao_no_stj
+      - ponte_entre_cnj_e_registro_stj
+    keys:
+      primary_process_key: numero_processo
+      auxiliary_process_key: numero_registro_stj
+    observed_coverage:
+      start_date: "2023-06-30"
+      end_date: null
+      certainty: exact
+    raw_locations:
+      - data/api
+      - docs/atas-distribuicao
+    processed_artifacts:
+      - stj_processos_ciclo_vida.parquet
+      - stj_ata_distribuicoes.parquet
+      - stj_ata_partes.parquet
+      - stj_ata_advogados.parquet
+    limitations:
+      - "nao sustenta sozinho recortes historicos anteriores a 2023-06-30"
+
+  datajud_stj:
+    kind: structured_process_data
+    status: active
+    role:
+      - movimentos
+      - metadados_processuais
+      - assuntos_e_orgao_julgador
+    keys:
+      primary_process_key: numero_processo
+    observed_coverage:
+      start_date: null
+      end_date: null
+      certainty: variable
+      note: "cobertura observada depende do lookup por processo"
+    raw_locations:
+      - data/raw/datajud_stj_lookup
+    processed_artifacts:
+      - stj_datajud_lookup_status.parquet
+      - stj_datajud_processos.parquet
+      - stj_datajud_movimentos.parquet
+      - stj_datajud_assuntos.parquet
+    limitations:
+      - "nao e corpus textual principal"
+      - "cobertura empirica ainda baixa no recorte atual"
+
+  precedentes_stj:
+    kind: juridical_context
+    status: exploratory
+    role:
+      - temas
+      - teses
+      - leading_cases
+      - contexto_semantico
+    keys:
+      primary_context_key: sequencialPrecedente
+      bridge_key_to_stj: numeroRegistro
+    raw_locations:
+      - docs/precedentes
+    limitations:
+      - "nao substitui timeline processual"
+      - "serve como enriquecimento semantico-relacional"
+
+  movimentacao_stj:
+    kind: process_events
+    status: exploratory
+    role:
+      - eventos_processuais
+      - historico_publicado_em_xml
+    keys:
+      primary_process_key: numeroUnico
+      auxiliary_process_key: numeroRegistro
+    observed_coverage:
+      start_date: "2022-06-07"
+      end_date: "2024-06-18"
+      certainty: exact
+      note: "janela observada no portal aberto; pode nao cobrir historico integral"
+    raw_locations:
+      - docs/movimentacao
+    limitations:
+      - "janela publica limitada"
+      - "mais util como complemento e como base para dicionarios/lookup"
+
+  dicionarios_stj:
+    kind: lookup
+    status: active
+    role:
+      - traducao_de_codigos
+      - normalizacao_semantica
+      - suporte_ao_schema
+    raw_locations:
+      - docs/movimentacao
+      - data/api
+      - data/reference/sgt_stj/processed
+    limitations:
+      - "nao sao base factual do processo"
+
+processing_windows:
+  historical_tracking:
+    description: "janela de download para ampliar rastreio sem quebrar processos longos"
+    suggested_years:
+      - 2019
+      - 2020
+      - 2021
+      - 2022
+      - 2023
+
+  recent_validated:
+    description: "janela recente ja trabalhada no projeto"
+    suggested_years:
+      - 2024
+      - 2025
+      - 2026
+
+analytic_windows:
+  pre_ia:
+    rule: "timeline_end <= 2022-12-31"
+  transicao:
+    rule: "timeline_start <= 2023-12-31 and timeline_end >= 2023-01-01"
+  pos_ia:
+    rule: "timeline_end >= 2024-01-01"
+
+notebook_controls:
+  downloads:
+    notebook_00_download_stj_metadados:
+      controls:
+        - DATA_INICIO
+        - DATA_FIM
+    notebook_00b_download_stj_textos:
+      controls:
+        - ANOS_ANALISE
+        - DATA_INICIO
+        - DATA_FIM
+
+  processing:
+    notebook_06_ciclo_vida_processual_stj:
+      controls:
+        - ANOS_ANALISE
+        - MAX_ARQUIVOS_METADATA
+        - FORCAR_REPROCESSAR_METADATA
+    notebook_07_documentos_por_processo_stj:
+      controls:
+        - ANOS_ANALISE
+        - MAX_LOTES
+        - MAX_DOCUMENTOS
+    notebook_09_datajud_stj_por_cnj:
+      controls:
+        - input_process_spine_from_notebook_06
+    notebook_10_vida_util_stj_enriquecida:
+      controls:
+        - input_outputs_from_06_07_09

@@ -34,6 +34,8 @@ Para texto integral e processo:
 02_validacao_integras_txt.ipynb
 06_ciclo_vida_processual_stj.ipynb
 07_documentos_por_processo_stj.ipynb
+09_datajud_stj_por_cnj.ipynb
+10_vida_util_stj_enriquecida.ipynb
 ```
 
 Para assuntos:
@@ -270,6 +272,8 @@ Construir uma espinha dorsal processual a partir de varias fontes:
 - Adicionado cache para `stj_integras_documentos_manifest.parquet`.
 - Adicionado `processo_agregacao`, que usa CNJ quando existe, senao `numeroRegistro`, senao numero original.
 - Adicionado controle para evitar leituras longas por acidente.
+- Ajustado o merge entre ATA e corpus documental para usar `numero_registro_stj` quando o CNJ nao estiver presente nas integras.
+- Adicionado `stj_ata_advogados.parquet` na lista de artefatos salvos.
 
 ### Parametros principais
 
@@ -283,13 +287,28 @@ Construir uma espinha dorsal processual a partir de varias fontes:
 - `data/processed/stj_processos_ciclo_vida.parquet`
 - `data/processed/stj_movimentos_datajud.parquet`
 - `data/processed/stj_ata_distribuicoes.parquet`
+- `data/processed/stj_ata_partes.parquet`
+- `data/processed/stj_ata_advogados.parquet`
 - `data/processed/stj_integras_documentos_manifest.parquet`
 - `data/processed/stj_integras_corpus_por_chave.parquet`
 - `data/reports/summaries/stj_ciclo_vida_processual_summary.md`
 
 ### Estado metodologico
 
-Este notebook ainda e experimental. Se `process_spine` aparecer com zero processos, isso nao invalida a EDA documental; indica que a ligacao CNJ/registro/processo ainda precisa ser melhor resolvida.
+Este notebook continua experimental, mas ja saiu do estado em que a ligacao era
+sempre zero. A leitura metodologica mais segura dele hoje e:
+
+```text
+espinha dorsal do processo no STJ
+```
+
+Ele deve responder:
+
+- quais processos a ATA descreve;
+- quais desses processos podem ser ligados ao corpus do STJ por `numero_registro_stj`;
+- quais metadados estruturais o processo ja possui antes da camada DataJud STJ em lote.
+
+Ele nao deve, sozinho, ser vendido como timeline final enriquecida.
 
 ## 07_documentos_por_processo_stj.ipynb
 
@@ -338,6 +357,85 @@ GERAR_TEXTO_POR_PROCESSO = False
 
 Depois aumente gradualmente.
 
+## 09_datajud_stj_por_cnj.ipynb
+
+### Objetivo
+
+Consultar o endpoint `api_publica_stj` do DataJud usando os CNJs presentes em
+`stj_processos_ciclo_vida.parquet`.
+
+### Papel no redesenho
+
+Este notebook deve ser o responsavel exclusivo por:
+
+- consultar o DataJud STJ por `numeroProcesso`;
+- medir cobertura da consulta;
+- salvar respostas brutas e normalizadas;
+- extrair movimentos, assuntos, classe e orgao julgador.
+
+### Entradas
+
+- `data/processed/stj_processos_ciclo_vida.parquet`
+- chave de API DataJud em ambiente
+
+### Saidas esperadas
+
+- `data/processed/stj_datajud_processos.parquet`
+- `data/processed/stj_datajud_movimentos.parquet`
+- `data/processed/stj_datajud_assuntos.parquet`
+- `data/processed/stj_datajud_lookup_status.parquet`
+
+### Observacao metodologica
+
+O foco aqui nao e texto. O foco e recuperar:
+
+- `dataAjuizamento`
+- `dataHoraUltimaAtualizacao`
+- `movimentos`
+- `assuntos`
+- `orgaoJulgador`
+
+para enriquecer a vida util processual no STJ.
+
+## 10_vida_util_stj_enriquecida.ipynb
+
+### Objetivo
+
+Montar a linha do tempo final do processo no STJ combinando:
+
+- ATA do STJ;
+- movimentos do DataJud STJ;
+- documentos das integras do STJ.
+
+### Papel no redesenho
+
+Este notebook deve concentrar a pergunta:
+
+```text
+como fica a vida util processual no STJ depois de juntar estrutura e documento?
+```
+
+### Entradas
+
+- `data/processed/stj_processos_ciclo_vida.parquet`
+- `data/processed/stj_datajud_processos.parquet`
+- `data/processed/stj_datajud_movimentos.parquet`
+- `data/processed/stj_documentos_por_processo.parquet`
+
+### Saidas esperadas
+
+- `data/processed/stj_process_events.parquet`
+- `data/processed/stj_process_timeline.parquet`
+- relatorios de cobertura final
+
+### Observacao metodologica
+
+Este notebook deve ser o lugar correto para a formula:
+
+```text
+vida util processual no STJ, enriquecida com data de ajuizamento e metadados processuais do DataJud
+```
+
 ## 08_apresentacao_eda_stj.ipynb
 
 ### Objetivo
@@ -376,9 +474,10 @@ Gerar uma apresentacao visual e curta da EDA documental para conversa com profes
 Capturar dados de outras instancias e uma boa proxima etapa, mas nao precisa entrar na EDA atual como resultado. A estrategia recomendada e:
 
 1. consolidar a base STJ por documento e registro;
-2. enriquecer acordaos com os datasets de Espelhos de Acordaos;
-3. usar Atas de Distribuicao e Movimentacao Processual para a vida no STJ;
-4. usar DataJud e/ou dados de tribunais de origem para reconstruir a trajetoria anterior.
+2. usar Atas de Distribuicao e Movimentacao Processual para a vida no STJ;
+3. usar DataJud STJ por CNJ para recuperar movimentos, classe, assuntos e data de ajuizamento;
+4. anexar documentos e textos das integras do STJ;
+5. so depois pensar em trajetoria anterior ao STJ com tribunais de origem.
 
 ## Sobre Merge Para `main`
 

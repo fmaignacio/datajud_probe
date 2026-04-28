@@ -27,6 +27,12 @@ def as_text(value: Any) -> str:
     return str(value)
 
 
+def column_or_empty(frame: pd.DataFrame, column: str) -> pd.Series:
+    if column in frame.columns:
+        return frame[column]
+    return pd.Series([""] * len(frame), index=frame.index, dtype="object")
+
+
 def load_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -188,13 +194,45 @@ def show_timeline(payload: dict[str, Any]) -> None:
         st.info("Sem eventos na timeline.")
         return
     frame = pd.DataFrame(timeline)
-    if "event_source" in frame.columns:
-        sources = sorted(frame["event_source"].dropna().astype(str).unique().tolist())
-        selected_sources = st.multiselect("Fontes", sources, default=sources)
-        if selected_sources:
-            frame = frame[frame["event_source"].astype(str).isin(selected_sources)]
-    if "event_datetime" in frame.columns:
-        frame = frame.sort_values("event_datetime")
+    frame = prepare_timeline(frame)
+
+    cols = st.columns([1, 1, 1, 1, 1])
+    cols[0].metric("Eventos", len(frame))
+    cols[1].metric("Data inicial", as_text(frame["event_date"].min()) or "-")
+    cols[2].metric("Data final", as_text(frame["event_date"].max()) or "-")
+    cols[3].metric("Fases", frame["fase_processual"].nunique())
+    cols[4].metric("Decisórios", int(frame["eh_evento_decisorio"].sum()))
+
+    filter_cols = st.columns([1, 1, 1, 1])
+    with filter_cols[0]:
+        if "event_source" in frame.columns:
+            sources = sorted(frame["event_source"].dropna().astype(str).unique().tolist())
+            selected_sources = st.multiselect("Fontes", sources, default=sources)
+            if selected_sources:
+                frame = frame[frame["event_source"].astype(str).isin(selected_sources)]
+    with filter_cols[1]:
+        phases = sorted(frame["fase_processual"].dropna().astype(str).unique().tolist())
+        selected_phases = st.multiselect("Fases", phases, default=phases)
+        if selected_phases:
+            frame = frame[frame["fase_processual"].astype(str).isin(selected_phases)]
+    with filter_cols[2]:
+        only_decision = st.checkbox("Somente eventos decisórios")
+        if only_decision:
+            frame = frame[frame["eh_evento_decisorio"]]
+    with filter_cols[3]:
+        search_event = st.text_input("Busca livre na timeline")
+        if search_event:
+            combined_text = (
+                frame["event_type_text"].fillna("")
+                + " "
+                + frame["event_description"].fillna("")
+                + " "
+                + frame["document_kind"].fillna("")
+            )
+            frame = frame[combined_text.str.contains(search_event, case=False, na=False)]
+
+    if "event_dt" in frame.columns:
+        frame = frame.sort_values("event_dt")
     st.dataframe(frame, use_container_width=True, hide_index=True)
 
 
@@ -229,6 +267,119 @@ def show_documentos(payload: dict[str, Any]) -> None:
 def show_raw(payload: dict[str, Any]) -> None:
     with st.expander("JSON bruto"):
         st.json(payload)
+
+
+def phase_from_text(text: str) -> str:
+    lowered = text.lower()
+    if any(token in lowered for token in ("distrib", "autua", "registro", "cadastr")):
+        return "01 - Registro/Distribuição"
+    if any(token in lowered for token in ("juntad", "peti", "exped", "protoc")):
+        return "02 - Instrução/Tramitação"
+    if any(token in lowered for token in ("relator", "conclus", "voto", "sess", "pauta")):
+        return "03 - Relatoria/Julgamento"
+    if any(token in lowered for token in ("acórd", "decis", "senten", "homolog", "baixa")):
+        return "04 - Decisão/Encerramento"
+    return "99 - Outros"
+
+
+def is_decision_event(text: str) -> bool:
+    lowered = text.lower()
+    markers = (
+        "acórd",
+        "acordao",
+        "decis",
+        "julg",
+        "senten",
+        "homolog",
+        "trânsito",
+        "transito",
+        "baixa",
+    )
+    return any(marker in lowered for marker in markers)
+
+
+def prepare_timeline(frame: pd.DataFrame) -> pd.DataFrame:
+    local = frame.copy()
+    local["event_datetime"] = column_or_empty(local, "event_datetime").astype(str)
+    local["event_date"] = local["event_datetime"].str[:10]
+    local["event_dt"] = pd.to_datetime(local["event_datetime"], errors="coerce", utc=True)
+    local["event_text_join"] = (
+        column_or_empty(local, "event_type_text").fillna("").astype(str)
+        + " "
+        + column_or_empty(local, "event_description").fillna("").astype(str)
+        + " "
+        + column_or_empty(local, "document_kind").fillna("").astype(str)
+    ).str.strip()
+    local["event_type_text"] = column_or_empty(local, "event_type_text").fillna("").astype(str)
+    local["event_description"] = column_or_empty(local, "event_description").fillna("").astype(str)
+    local["document_kind"] = column_or_empty(local, "document_kind").fillna("").astype(str)
+    local["event_source"] = column_or_empty(local, "event_source").fillna("").astype(str)
+    local["fase_processual"] = local["event_text_join"].map(phase_from_text)
+    local["eh_evento_decisorio"] = local["event_text_join"].map(is_decision_event)
+    return local
+
+
+def show_vida_util(payload: dict[str, Any]) -> None:
+    st.subheader("Vida útil detalhada do processo")
+    timeline = payload.get("timeline", [])
+    if not timeline:
+        st.info("Sem timeline para reconstruir a vida útil.")
+        return
+
+    frame = prepare_timeline(pd.DataFrame(timeline)).sort_values("event_dt")
+    frame_non_null = frame[frame["event_dt"].notna()].copy()
+    if frame_non_null.empty:
+        st.warning("Os eventos não possuem data válida para cálculo da vida útil.")
+        return
+
+    first_event = frame_non_null.iloc[0]
+    decision_events = frame_non_null[frame_non_null["eh_evento_decisorio"]]
+    last_event = frame_non_null.iloc[-1]
+    decision_anchor = decision_events.iloc[-1] if not decision_events.empty else last_event
+
+    cycle_days = int((decision_anchor["event_dt"] - first_event["event_dt"]).days)
+    cols = st.columns(5)
+    cols[0].metric("Primeiro registro", as_text(first_event["event_date"]))
+    cols[1].metric("Marco decisório", as_text(decision_anchor["event_date"]))
+    cols[2].metric("Dias até decisão", cycle_days if cycle_days >= 0 else "-")
+    cols[3].metric("Eventos no ciclo", len(frame_non_null))
+    cols[4].metric("Eventos decisórios", len(decision_events))
+
+    st.write("**Linha do tempo por fase (do primeiro registro ao marco decisório)**")
+    cycle_slice = frame_non_null[
+        (frame_non_null["event_dt"] >= first_event["event_dt"])
+        & (frame_non_null["event_dt"] <= decision_anchor["event_dt"])
+    ].copy()
+    phase_summary = (
+        cycle_slice.groupby("fase_processual", dropna=False)
+        .agg(
+            eventos=("event_datetime", "count"),
+            primeiro_evento=("event_date", "min"),
+            ultimo_evento=("event_date", "max"),
+            fontes=("event_source", lambda s: ", ".join(sorted(set(s.dropna().astype(str))))),
+        )
+        .reset_index()
+        .sort_values("fase_processual")
+    )
+    st.dataframe(phase_summary, use_container_width=True, hide_index=True)
+
+    st.write("**Eventos críticos do ciclo**")
+    critical = cycle_slice[
+        cycle_slice["eh_evento_decisorio"]
+        | cycle_slice["fase_processual"].isin(
+            ["01 - Registro/Distribuição", "03 - Relatoria/Julgamento", "04 - Decisão/Encerramento"]
+        )
+    ].copy()
+    keep_cols = [
+        "event_datetime",
+        "event_source",
+        "fase_processual",
+        "event_type_text",
+        "event_description",
+        "document_kind",
+    ]
+    show_cols = [col for col in keep_cols if col in critical.columns]
+    st.dataframe(critical[show_cols], use_container_width=True, hide_index=True)
 
 
 def main() -> None:
@@ -269,6 +420,18 @@ def main() -> None:
     filtered = optional_filter(filtered, "tribunal_cnj", "Tribunal CNJ")
     filtered = optional_filter(filtered, "relator_ata_principal", "Relator ATA")
     filtered = optional_filter(filtered, "ano_origem_cnj", "Ano de origem")
+    filtered = optional_filter(filtered, "assunto_cnj_ata", "Assunto CNJ")
+    filtered = optional_filter(filtered, "fontes_timeline", "Fonte na timeline", allow_multiple=True)
+
+    if "n_eventos_timeline" in filtered.columns and not filtered["n_eventos_timeline"].dropna().empty:
+        max_events = int(filtered["n_eventos_timeline"].dropna().max())
+        min_events = st.sidebar.slider("Mínimo de eventos na timeline", 0, max_events, 0)
+        filtered = filtered[filtered["n_eventos_timeline"].fillna(0) >= min_events]
+
+    if "n_documentos_texto_disponiveis" in filtered.columns and not filtered["n_documentos_texto_disponiveis"].dropna().empty:
+        max_docs = int(filtered["n_documentos_texto_disponiveis"].dropna().max())
+        min_docs = st.sidebar.slider("Mínimo de documentos com texto", 0, max_docs, 0)
+        filtered = filtered[filtered["n_documentos_texto_disponiveis"].fillna(0) >= min_docs]
 
     if "tem_datajud" in filtered.columns:
         only_datajud = st.sidebar.checkbox("Somente com DataJud")
@@ -306,18 +469,20 @@ def main() -> None:
 
     show_process_header(payload)
 
-    tabs = st.tabs(["Timeline", "Partes", "Documentos", "STJ", "DataJud", "JSON"])
+    tabs = st.tabs(["Vida útil", "Timeline", "Partes", "Documentos", "STJ", "DataJud", "JSON"])
     with tabs[0]:
-        show_timeline(payload)
+        show_vida_util(payload)
     with tabs[1]:
-        show_partes(payload)
+        show_timeline(payload)
     with tabs[2]:
-        show_documentos(payload)
+        show_partes(payload)
     with tabs[3]:
-        show_stj(payload)
+        show_documentos(payload)
     with tabs[4]:
-        show_datajud(payload)
+        show_stj(payload)
     with tabs[5]:
+        show_datajud(payload)
+    with tabs[6]:
         show_raw(payload)
 
 
